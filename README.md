@@ -13,3 +13,8 @@ Script to partially automate my rsync backup workflow.
 rsync.el can pause/resume its operations across Emacs sessions.
 
 Multi-device use - ask user for "device name" (used to determine directory on hard disk) and "disk name" (used to determine disk path)
+
+## License
+rsync.el is released under your choice of [Unlicense](https://unlicense.org/) and the [WTFPL](http://www.wtfpl.net/).
+
+(See files [LICENSE](LICENSE) and [LICENSE.1](LICENSE.1)).
