@@ -21,8 +21,9 @@
 
 (defvar rsync-directory-alists nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
-SOURCE will be appended to DESTINATION, so the destination path
-will be DESTINATION/SOURCE/.")
+With the default value of `rsync-command-function' (see
+`rsync-command'), SOURCE will be appended to DESTINATION, so the
+destination path will be DESTINATION/SOURCE/.")
 
 (defvar rsync-command "rsync"
   "Name of command to run. Can also be a path to the binary.")
@@ -33,6 +34,20 @@ will be DESTINATION/SOURCE/.")
   "List of options to be used in all calls to rsync.
 It is not designed to contain \"-n\"/\"--dry-run\".")
 
+(defvar rsync-command-function 'rsync-command)
+
+(defun rsync-command (source destination dry-run-p)
+  "Return the rsync command line to be run.
+SOURCE and DESTINATION are paths from a `rsync-directory-alists' pair.
+If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
+  (let ((source      (expand-file-name source))
+        (destination (expand-file-name destination)))
+    `(,rsync-command
+      ,@rsync-arguments
+      ,(if dry-run-p "--dry-run" "")
+      ,source
+      ,(concat destination source))))
+
 (defun rsync-sentinel (proc event)
   (message "%s %s" proc event))
 
@@ -41,18 +56,13 @@ It is not designed to contain \"-n\"/\"--dry-run\".")
 Display the rsync output in a buffer. The user may inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
+  (interactive)
   (cl-loop for (source . destination) in rsync-directory-alists do
-    (let ((source      (expand-file-name source))
-          (destination (expand-file-name destination)))
-      (make-process :name "rsync"
-                    :buffer (generate-new-buffer-name "rsync-output")
-                    :command `(,rsync-command
-                               ,@rsync-arguments
-                               "--dry-run"
-                               ,source
-                               ,(concat destination source))
-                    :connection-type 'pipe
-                    :stderr "rsync-errors"))))
+    (make-process :name "rsync"
+                  :buffer (generate-new-buffer-name "rsync-output")
+                  :command (funcall #'rsync-command source destination t)
+                  :connection-type 'pipe
+                  :stderr "rsync-errors")))
 
 (provide 'rsync)
 
