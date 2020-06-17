@@ -84,27 +84,32 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
 (defvar rsync--active-procs nil
   "List of active rsync processes.")
 
-;; TODO - need to reset `rsync--alist-index'
-
 (defun rsync ()
   "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alists'.
-Display the rsync output in a buffer. The user may inspect the
+Display the rsync output in a buffer (see
+`rsync-buffer-name-function'). The user may then inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
   (if rsync-directory-alists
-      (cl-loop for (source . destination)
-        in (seq-drop rsync-directory-alists rsync--alist-index)
+      (cl-loop with directory-alists = (seq-drop rsync-directory-alists rsync--alist-index)
+        for (source . destination) in directory-alists
+        ;; TODO - don't start new processes for paths which already have running processes
         if (< (length rsync--active-procs) rsync-max-procs) do
-        (nconc
-         rsync--active-procs
+        (->>
          (make-process
-          :name "rsync"
-          :buffer (funcall rsync-buffer-name-function source destination)
-          :command (funcall rsync-command-function source destination t)
+          :name    "rsync"
+          :buffer  (funcall rsync-buffer-name-function source destination)
+          :command (funcall rsync-command-function     source destination t)
           :connection-type 'pipe
-          :stderr "rsync-errors"))
-        (cl-incf rsync--alist-index))
+          :stderr  "rsync-errors")
+         (list)
+         (append rsync--active-procs)
+         (setq rsync--active-procs))
+        (cl-incf rsync--alist-index)
+        ;; reset `rsync--alist-index' at the end of the list
+        if (= rsync--alist-index (length directory-alists))
+        do (setq rsync--alist-index 0))
     (error "Please add some paths to `rsync-directory-alists' for `rsync' to synchronize")))
 
 (provide 'rsync)
