@@ -19,6 +19,9 @@
 
 ;;; Code:
 
+(defvar rsync-max-procs 1
+  "Number of rsync processes to run in parallel.")
+
 (defvar rsync-directory-alists nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
 With the default value of `rsync-command-function' (see
@@ -33,7 +36,14 @@ destination path will be DESTINATION/SOURCE/.")
                      "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
 It must not contain \"-n\"/\"--dry-run\" -
-`rsync-command-function' will do that.")
+`rsync-command-function' will add that.")
+
+(defvar rsync-buffer-name-function 'rsync-buffer-name
+  "Function used to create rsync buffer names.")
+
+(defun rsync-buffer-name ()
+  "Return a new, unique buffer name starting with \"rsync-output\"."
+  (generate-new-buffer-name "rsync-output"))
 
 (defvar rsync-command-function 'rsync-command
   "Function used to generate the rsync command to be run.
@@ -58,18 +68,31 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
 (defun rsync-sentinel (proc event)
   (message "%s %s" proc event))
 
+(defvar rsync--alist-index 0)
+(defvar rsync--active-procs nil
+  "List of active rsync processes.")
+
 (defun rsync ()
   "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alists'.
 Display the rsync output in a buffer. The user may inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
-  (cl-loop for (source . destination) in rsync-directory-alists do
-    (make-process :name "rsync"
-                  :buffer (generate-new-buffer-name "rsync-output")
-                  :command (funcall #'rsync-command source destination t)
-                  :connection-type 'pipe
-                  :stderr "rsync-errors")))
+  (cl-loop for (source . destination)
+    in (seq-drop rsync-directory-alists rsync--alist-index)
+    if (< (length rsync--active-procs) rsync-max-procs) do
+    (nconc
+     rsync--active-procs
+     (make-process
+      :name "rsync"
+      :buffer (funcall #'rsync-buffer-name-function)
+      :command (funcall #'rsync-command-function source destination t)
+      :connection-type 'pipe
+      :stderr "rsync-errors"))
+    (incf rsync--alist-index)
+    else
+    ;; ... what now? start a timer?
+    ))
 
 (provide 'rsync)
 
