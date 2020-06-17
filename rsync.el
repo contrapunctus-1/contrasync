@@ -39,19 +39,29 @@ It must not contain \"-n\"/\"--dry-run\" -
 `rsync-command-function' will add that.")
 
 (defvar rsync-buffer-name-function 'rsync-buffer-name
-  "Function used to create rsync buffer names.")
+  "Function used to create rsync buffer names.
+It is called with 2 arguments - SOURCE and DESTINATION, which are
+paths from a `rsync-directory-alists' pair.")
 
-(defun rsync-buffer-name ()
-  "Return a new, unique buffer name starting with \"rsync-output\"."
-  (generate-new-buffer-name "rsync-output"))
+(defun rsync-buffer-name (source destination)
+  "Return a new, unique buffer name starting with \"rsync-output\".
+SOURCE and DESTINATION are paths from a `rsync-directory-alists' pair."
+  (generate-new-buffer-name
+   (concat "rsync-output-"
+           (file-name-nondirectory
+            (directory-file-name source)))))
 
 (defvar rsync-command-function 'rsync-command
   "Function used to generate the rsync command to be run.
-Return value should be a list of strings, usually with `rsync-command' as the first element, followed by `rsync-arguments'.
+Return value should be a list of strings, usually with
+`rsync-command' as the first element, followed by
+`rsync-arguments'.
 
-It must accept 3 arguments - the SOURCE path, the DESTINATION path, and DRY-RUN-P.
+It is called with 3 arguments - the SOURCE path, the DESTINATION
+path, and DRY-RUN-P.
 
-If DRY-RUN-P is non-nil, the function should include \"--dry-run\"/\"-n\" in the arguments.")
+If DRY-RUN-P is non-nil, the function should include
+\"--dry-run\"/\"-n\" in the arguments.")
 
 (defun rsync-command (source destination dry-run-p)
   "Return the rsync command line to be run.
@@ -65,12 +75,16 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
       ,source
       ,(concat destination source))))
 
+;; TODO - have the sentinel remove the process from `rsync--active-procs'; maybe run `rsync' again
+
 (defun rsync-sentinel (proc event)
   (message "%s %s" proc event))
 
 (defvar rsync--alist-index 0)
 (defvar rsync--active-procs nil
   "List of active rsync processes.")
+
+;; TODO - need to reset `rsync--alist-index'
 
 (defun rsync ()
   "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alists'.
@@ -85,14 +99,11 @@ command again, but without the \"--dry-run.\""
      rsync--active-procs
      (make-process
       :name "rsync"
-      :buffer (funcall #'rsync-buffer-name-function)
-      :command (funcall #'rsync-command-function source destination t)
+      :buffer (funcall rsync-buffer-name-function source destination)
+      :command (funcall rsync-command-function source destination t)
       :connection-type 'pipe
       :stderr "rsync-errors"))
-    (incf rsync--alist-index)
-    else
-    ;; ... what now? start a timer?
-    ))
+    (cl-incf rsync--alist-index)))
 
 (provide 'rsync)
 
