@@ -32,9 +32,16 @@ destination path will be DESTINATION/SOURCE/.")
 (defvar rsync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "x"
                      "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
-It is not designed to contain \"-n\"/\"--dry-run\".")
+It must not contain \"-n\"/\"--dry-run\" -
+`rsync-command-function' will do that.")
 
-(defvar rsync-command-function 'rsync-command)
+(defvar rsync-command-function 'rsync-command
+  "Function used to generate the rsync command to be run.
+Return value should be a list of strings, usually with `rsync-command' as the first element, followed by `rsync-arguments'.
+
+It must accept 3 arguments - the SOURCE path, the DESTINATION path, and DRY-RUN-P.
+
+If DRY-RUN-P is non-nil, the function should include \"--dry-run\"/\"-n\" in the arguments.")
 
 (defun rsync-command (source destination dry-run-p)
   "Return the rsync command line to be run.
