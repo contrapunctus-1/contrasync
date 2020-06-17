@@ -19,39 +19,48 @@
 
 ;;; Code:
 
-(defvar rsync-max-procs 1
-  "Number of rsync processes to run in parallel.")
+(defgroup rsync nil
+  "Run rsync on a user-defined alist of paths.")
 
-(defvar rsync-directory-alists nil
+;; TODO - better default? Determine it, somehow? Number of CPU cores?
+(defcustom rsync-max-procs 1
+  "Number of rsync processes to run in parallel."
+  :type 'integer)
+
+(defcustom rsync-directory-alist nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
 With the default value of `rsync-command-function' (see
 `rsync-command'), SOURCE will be appended to DESTINATION, so the
-destination path will be DESTINATION/SOURCE/.")
+destination path will be DESTINATION/SOURCE/."
+  :type '(alist :key-type directory :value-type directory))
 
-(defvar rsync-command "rsync"
-  "Name of command to run. Can also be a path to the binary.")
+(defcustom rsync-command "rsync"
+  "Name of command to run. Can also be a path to the binary."
+  :type '(file :must-match t))
 
 ;; -P creates a progress bar. It is a nuisance at this stage, but maybe we can make a better progress bar using it?
-(defvar rsync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "x"
+(defcustom rsync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "-x"
                      "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
 It must not contain \"-n\"/\"--dry-run\" -
-`rsync-command-function' will add that.")
+`rsync-command-function' will add that."
+  :type '(repeat string))
 
-(defvar rsync-buffer-name-function 'rsync-buffer-name
+(defcustom rsync-buffer-name-function 'rsync-buffer-name
   "Function used to create rsync buffer names.
 It is called with 2 arguments - SOURCE and DESTINATION, which are
-paths from a `rsync-directory-alists' pair.")
+paths from a `rsync-directory-alist' pair."
+  :type 'function)
 
 (defun rsync-buffer-name (source destination)
   "Return a new, unique buffer name starting with \"rsync-output\".
-SOURCE and DESTINATION are paths from a `rsync-directory-alists' pair."
+SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair."
   (generate-new-buffer-name
    (concat "rsync-output-"
            (file-name-nondirectory
             (directory-file-name source)))))
 
-(defvar rsync-command-function 'rsync-command
+(defcustom rsync-command-function 'rsync-command
   "Function used to generate the rsync command to be run.
 Return value should be a list of strings, usually with
 `rsync-command' as the first element, followed by
@@ -61,11 +70,12 @@ It is called with 3 arguments - the SOURCE path, the DESTINATION
 path, and DRY-RUN-P.
 
 If DRY-RUN-P is non-nil, the function should include
-\"--dry-run\"/\"-n\" in the arguments.")
+\"--dry-run\"/\"-n\" in the arguments."
+  :type 'function)
 
 (defun rsync-command (source destination dry-run-p)
   "Return the rsync command line to be run.
-SOURCE and DESTINATION are paths from a `rsync-directory-alists' pair.
+SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair.
 If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
   (let ((source      (expand-file-name source))
         (destination (expand-file-name destination)))
@@ -85,14 +95,14 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
   "List of active rsync processes.")
 
 (defun rsync ()
-  "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alists'.
+  "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alist'.
 Display the rsync output in a buffer (see
 `rsync-buffer-name-function'). The user may then inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
-  (if rsync-directory-alists
-      (cl-loop with directory-alists = (seq-drop rsync-directory-alists rsync--alist-index)
+  (if rsync-directory-alist
+      (cl-loop with directory-alists = (seq-drop rsync-directory-alist rsync--alist-index)
         for (source . destination) in directory-alists
         ;; TODO - don't start new processes for paths which already have running processes
         if (< (length rsync--active-procs) rsync-max-procs) do
@@ -110,7 +120,7 @@ command again, but without the \"--dry-run.\""
         ;; reset `rsync--alist-index' at the end of the list
         if (= rsync--alist-index (length directory-alists))
         do (setq rsync--alist-index 0))
-    (error "Please add some paths to `rsync-directory-alists' for `rsync' to synchronize")))
+    (error "Please add some paths to `rsync-directory-alist' for `rsync' to synchronize")))
 
 (provide 'rsync)
 
