@@ -92,18 +92,20 @@ Display the rsync output in a buffer. The user may inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
-  (cl-loop for (source . destination)
-    in (seq-drop rsync-directory-alists rsync--alist-index)
-    if (< (length rsync--active-procs) rsync-max-procs) do
-    (nconc
-     rsync--active-procs
-     (make-process
-      :name "rsync"
-      :buffer (funcall rsync-buffer-name-function source destination)
-      :command (funcall rsync-command-function source destination t)
-      :connection-type 'pipe
-      :stderr "rsync-errors"))
-    (cl-incf rsync--alist-index)))
+  (if rsync-directory-alists
+      (cl-loop for (source . destination)
+        in (seq-drop rsync-directory-alists rsync--alist-index)
+        if (< (length rsync--active-procs) rsync-max-procs) do
+        (nconc
+         rsync--active-procs
+         (make-process
+          :name "rsync"
+          :buffer (funcall rsync-buffer-name-function source destination)
+          :command (funcall rsync-command-function source destination t)
+          :connection-type 'pipe
+          :stderr "rsync-errors"))
+        (cl-incf rsync--alist-index))
+    (error "Please add some paths to `rsync-directory-alists' for `rsync' to synchronize")))
 
 (provide 'rsync)
 
