@@ -120,6 +120,7 @@ command again, but without the \"--dry-run.\""
          (append rsync--active-procs)
          (setq rsync--active-procs))
         (cl-incf rsync--alist-index)
+        else do (cl-return)
         ;; reset `rsync--alist-index' at the end of the list
         if (= rsync--alist-index (length directory-alists))
         do (setq rsync--alist-index 0))
