@@ -26,7 +26,6 @@
 (defgroup rsync nil
   "Run rsync on a user-defined alist of paths.")
 
-;; TODO - better default? Determine it, somehow? Number of CPU cores?
 (defcustom rsync-max-procs 1
   "Number of rsync processes to run in parallel."
   :type 'integer)
