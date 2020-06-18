@@ -21,3 +21,6 @@ While written primarily with the author's workflow in mind, it is hoped that rsy
 rsync.el is released under your choice of [Unlicense](https://unlicense.org/) and the [WTFPL](http://www.wtfpl.net/).
 
 (See files [LICENSE](LICENSE) and [LICENSE.1](LICENSE.1)).
+
+## Thanks
+pjb, wasamasa, and bhartrihari
