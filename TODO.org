@@ -18,11 +18,43 @@
    Use that to do it on a per-path basis -
    #+BEGIN_SRC emacs-lisp
      '((:prefix "/media/anon/my-disk/"
-        :sources ("~/.emacs.d/"
-                  "~/Documents/" ;; if a string, use a default destination pattern - probably (prefix machine source), user-customizable
-                  ("~/foo/" :destination (prefix source)) ;; the destination for this one will be "/media/anon/my-disk/foo/"
-                  )))
+        :sources
+        ("~/.emacs.d/"
+         ;; if a string, use a default destination pattern - probably
+         ;; (prefix machine source), user-customizable
+         "~/Documents/"
+         ;; the destination for this one will be "/media/anon/my-disk/foo/"
+         ("~/foo/" :destination (prefix source)))))
    #+END_SRC
+   Like
+   1. Greater flexibility without needing to change =rsync-command-line-function=
+   2. Structures your config, somewhat like =use-package= - :sources are glued to :prefix (but see #2 below)
+
+   Dislike
+   1. Will complicate destructuring.
+   2. Can't use a source with a different :prefix (but see #2 above)
+
+   We could also do something similar while keeping the alist -
+   #+BEGIN_SRC emacs-lisp
+     (let* ((disk              "/media/anon/my-disk/")
+            (disk-machine-name (concat disk "HP ProBook")))
+       `(("~/.emacs.d/"           . ,disk-machine-name)
+         ("~/Documents/"          . ,disk-machine-name)
+         ("~/put-this-elsewhere/" . ,disk)))
+   #+END_SRC
+   Like
+   1. Provides more control to the user, while keeping the implementation complexity down.
+
+   Dislike
+   1. User has to deal with quasiquoting/make =list= calls.
+   2. Quasiquoting is visually ugly.
+   3. We're still implicitly appending the SOURCE path - so they can't say
+      : rsync ... ~/foo/bar/ /my-disk/
+      only
+      : rsync ... ~/foo/bar/ /my-disk/foo/bar/
+      - Does anyone really want to say the former, though?
+
+5. Check that the output path exists, and create it (with parents) if it does not.
 
 * Maybe
 1. Better default value for =rsync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
