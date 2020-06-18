@@ -42,7 +42,7 @@ path. See `rsync-command-line-function'."
 
 ;; -P creates a progress bar. It is a nuisance at this stage, but maybe we can make a better progress bar using it?
 (defcustom rsync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "-x"
-                     "--checksum" "--delete-after")
+                        "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
 It must not contain \"-n\"/\"--dry-run\" -
 `rsync-command-line-function' will add that."
@@ -51,7 +51,10 @@ It must not contain \"-n\"/\"--dry-run\" -
 (defcustom rsync-buffer-name-function 'rsync-buffer-name
   "Function used to create rsync buffer names.
 It is called with 2 arguments - SOURCE and DESTINATION, which are
-paths from a `rsync-directory-alist' pair."
+paths from a `rsync-directory-alist' pair.
+
+Please ensure that it uses `generate-new-buffer-name' to make it
+unique."
   :type 'function)
 
 (defun rsync-buffer-name (source destination)
@@ -87,7 +90,7 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
       ,source
       ,(concat destination source))))
 
-;; TODO - have the sentinel remove the process from `rsync--active-procs'; maybe run `rsync' again
+;; TODO - have the sentinel remove the process from `rsync--active-procs'; maybe run `rsync' again when a process exits
 
 (defun rsync-sentinel (proc event)
   (message "%s %s" proc event))
