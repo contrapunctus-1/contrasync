@@ -30,6 +30,16 @@
   "Number of rsync processes to run in parallel."
   :type 'integer)
 
+(defcustom rsync-machine-name (->> (shell-command-to-string "hostname")
+                              (replace-regexp-in-string "\n" "" ))
+  "Name of machine we're running on.
+The default value is the hostname, but it can be any string.
+
+By default, this is used to construct the destination path (see
+`rsync-command-line-function'). Thus, using path separators in
+this may lead to unexpected behaviour."
+  :type 'string)
+
 (defcustom rsync-directory-alist nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
 The DESTINATION is used as a prefix, rather than an absolute
