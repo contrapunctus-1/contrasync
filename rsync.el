@@ -3,6 +3,8 @@
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: files
+;; Homepage: https://github.com/contrapunctus-1/rsync.el
+;; Package-Requires: ((dash "2.16.0") (emacs "25.1") (seq "2.20"))
 ;; Version: 0.0.1
 
 ;; This is free and unencumbered software released into the public domain.
@@ -18,6 +20,8 @@
 ;;
 
 ;;; Code:
+
+(require 'dash)
 
 (defgroup rsync nil
   "Run rsync on a user-defined alist of paths.")
