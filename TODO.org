@@ -9,6 +9,20 @@
         :sources ("~/.emacs.d/"
                   "~/Documents/")))
    #+END_SRC
+4. Instead of requiring changes to =rsync-command-line= to change the path, make a =format=-like way to specify the final destination path.
+
+   Like ="%p/%m/%s"= for "<prefix path>/<machine name>/<source path>".
+
+   Or maybe use a list - ='(prefix machine source)=
+
+   Use that to do it on a per-path basis -
+   #+BEGIN_SRC emacs-lisp
+     '((:prefix "/media/anon/my-disk/"
+        :sources ("~/.emacs.d/"
+                  "~/Documents/" ;; if a string, use a default destination pattern - probably (prefix machine source), user-customizable
+                  ("~/foo/" :destination (prefix source)) ;; the destination for this one will be "/media/anon/my-disk/foo/"
+                  )))
+   #+END_SRC
 
 * Maybe
 1. Better default value for =rsync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
