@@ -42,8 +42,9 @@ this may lead to unexpected behaviour."
 
 (defcustom rsync-directory-alist nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
-The DESTINATION is used as a prefix, rather than an absolute
-path. See `rsync-command-line-function'."
+By default, SOURCE is appended to DESTINATION, so the final
+output path used is \"DESTINATION/SOURCE/\". See
+`rsync-command-line'."
   :type '(alist :key-type directory :value-type directory))
 
 (defcustom rsync-command "rsync"
@@ -91,6 +92,7 @@ If DRY-RUN-P is non-nil, the function should include
 (defun rsync-command-line (source destination dry-run-p)
   "Return the rsync command line to be run.
 SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair.
+
 If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
   (let ((source      (expand-file-name source))
         (destination (expand-file-name destination)))
@@ -124,8 +126,8 @@ command again, but without the \"--dry-run.\""
         (->>
          (make-process
           :name    "rsync"
-          :buffer  (funcall rsync-buffer-name-function source destination)
-          :command (funcall rsync-command-line-function     source destination t)
+          :buffer  (funcall rsync-buffer-name-function  source destination)
+          :command (funcall rsync-command-line-function source destination t)
           :connection-type 'pipe
           :stderr  "rsync-errors")
          (list)
