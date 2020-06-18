@@ -29,9 +29,8 @@
 
 (defcustom rsync-directory-alist nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
-With the default value of `rsync-command-function' (see
-`rsync-command'), SOURCE will be appended to DESTINATION, so the
-destination path will be DESTINATION/SOURCE/."
+The DESTINATION is used as a prefix, rather than an absolute
+path. See `rsync-command-line-function'."
   :type '(alist :key-type directory :value-type directory))
 
 (defcustom rsync-command "rsync"
@@ -43,7 +42,7 @@ destination path will be DESTINATION/SOURCE/."
                      "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
 It must not contain \"-n\"/\"--dry-run\" -
-`rsync-command-function' will add that."
+`rsync-command-line-function' will add that."
   :type '(repeat string))
 
 (defcustom rsync-buffer-name-function 'rsync-buffer-name
@@ -60,7 +59,7 @@ SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair."
            (file-name-nondirectory
             (directory-file-name source)))))
 
-(defcustom rsync-command-function 'rsync-command
+(defcustom rsync-command-line-function 'rsync-command-line
   "Function used to generate the rsync command to be run.
 Return value should be a list of strings, usually with
 `rsync-command' as the first element, followed by
@@ -73,7 +72,7 @@ If DRY-RUN-P is non-nil, the function should include
 \"--dry-run\"/\"-n\" in the arguments."
   :type 'function)
 
-(defun rsync-command (source destination dry-run-p)
+(defun rsync-command-line (source destination dry-run-p)
   "Return the rsync command line to be run.
 SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair.
 If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
@@ -110,7 +109,7 @@ command again, but without the \"--dry-run.\""
          (make-process
           :name    "rsync"
           :buffer  (funcall rsync-buffer-name-function source destination)
-          :command (funcall rsync-command-function     source destination t)
+          :command (funcall rsync-command-line-function     source destination t)
           :connection-type 'pipe
           :stderr  "rsync-errors")
          (list)
