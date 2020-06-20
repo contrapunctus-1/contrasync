@@ -53,9 +53,11 @@
       only
       : rsync ... ~/foo/bar/ /my-disk/foo/bar/
       - Does anyone really want to say the former, though? I sure don't.
+   4. Repetition. Note how we're using =disk= in each path, directly or indirectly. With the plist idea, it is used implicitly. And the most common kind of path (=disk-machine-name=) becomes the (user-customizable) default pattern.
 5. Check that the output path exists, and create it (with parents) if it does not.
 6. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~rsync-pause-all~/~rsync-resume-all~)
 
 * Maybe
 1. Better default value for =rsync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
 2. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
+3. Throttle rsync CPU/RAM/disk use?
