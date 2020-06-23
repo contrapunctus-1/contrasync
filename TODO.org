@@ -64,3 +64,4 @@
 1. Better default value for =rsync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
 2. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
 3. Throttle rsync CPU/RAM/disk use?
+4. Auto resume with idle timer?
