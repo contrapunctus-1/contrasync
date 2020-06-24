@@ -5,7 +5,7 @@
 
    How about something like...
    #+BEGIN_SRC emacs-lisp
-     '((:prefix "/media/anon/my-disk/"
+     '((:prefix "/media/user/my-disk/"
         :sources ("~/.emacs.d/"
                   "~/Documents/")))
    #+END_SRC
@@ -17,13 +17,13 @@
 
    Use that to do it on a per-path basis -
    #+BEGIN_SRC emacs-lisp
-     '((:prefix "/media/anon/my-disk/"
+     '((:prefix "/media/user/my-disk/"
         :sources
         ("~/.emacs.d/"
          ;; if a string, use a default destination pattern - probably
          ;; (prefix machine source), user-customizable
          "~/Documents/"
-         ;; the destination for this one will be "/media/anon/my-disk/foo/"
+         ;; the destination for this one will be "/media/user/my-disk/foo/"
          ("~/foo/" :destination (prefix source)))))
    #+END_SRC
    Like
@@ -37,7 +37,7 @@
 
    We could also do something similar while keeping the alist -
    #+BEGIN_SRC emacs-lisp
-     (let* ((disk              "/media/anon/my-disk/")
+     (let* ((disk              "/media/user/my-disk/")
             (disk-machine-name (concat disk "HP ProBook")))
        `(("~/.emacs.d/"           . ,disk-machine-name)
          ("~/Documents/"          . ,disk-machine-name)
