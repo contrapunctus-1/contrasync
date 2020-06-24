@@ -140,6 +140,14 @@ command again, but without the \"--dry-run.\""
         do (setq rsync--alist-index 0))
     (error "Please add some paths to `rsync-directory-alist' for `rsync' to synchronize")))
 
+(defvar rsync-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") #'rsync-accept))
+  "Keymap used by `rsync-mode'.")
+
+(define-derived-mode rsync-mode special-mode-hook "Rsync"
+  "Major mode for buffers created by `rsync'.")
+
 (provide 'rsync)
 
 ;;; rsync.el ends here
