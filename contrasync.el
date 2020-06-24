@@ -1,9 +1,9 @@
-;;; rsync.el --- make rsync backups easier -*- lexical-binding: t; -*-
+;;; contrasync.el --- make rsync backups easier -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Keywords: files
-;; Homepage: https://github.com/contrapunctus-1/rsync.el
+;; Homepage: https://github.com/contrapunctus-1/contrasync.el
 ;; Package-Requires: ((dash "2.16.0") (emacs "25.1") (seq "2.20"))
 ;; Version: 0.0.1
 
@@ -23,64 +23,64 @@
 
 (require 'dash)
 
-(defgroup rsync nil
+(defgroup contrasync nil
   "Run rsync on a user-defined alist of paths.")
 
-(defcustom rsync-max-procs 1
+(defcustom contrasync-max-procs 1
   "Number of rsync processes to run in parallel."
   :type 'integer)
 
-(defcustom rsync-machine-name (->> (shell-command-to-string "hostname")
+(defcustom contrasync-machine-name (->> (shell-command-to-string "hostname")
                               (replace-regexp-in-string "\n" "" ))
   "Name of machine we're running on.
 The default value is the hostname, but it can be any string.
 
 By default, this is used to construct the destination path (see
-`rsync-command-line-function'). Thus, using path separators in
+`contrasync-command-line-function'). Thus, using path separators in
 this may lead to unexpected behaviour."
   :type 'string)
 
-(defcustom rsync-directory-alist nil
+(defcustom contrasync-directory-alist nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
 By default, SOURCE is appended to DESTINATION, so the final
 output path used is \"DESTINATION/SOURCE/\". See
-`rsync-command-line'."
+`contrasync-command-line'."
   :type '(alist :key-type directory :value-type directory))
 
-(defcustom rsync-command "rsync"
+(defcustom contrasync-command "rsync"
   "Name of command to run. Can also be a path to the binary."
   :type '(file :must-match t))
 
 ;; -P creates a progress bar. It is a nuisance at this stage, but maybe we can make a better progress bar using it?
-(defcustom rsync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "-x"
+(defcustom contrasync-arguments '("-A" "-H" "-P" "-X" "-a" "-h" "-s" "-x"
                         "--checksum" "--delete-after")
   "List of options to be used in all calls to rsync.
 It must not contain \"-n\"/\"--dry-run\" -
-`rsync-command-line-function' will add that."
+`contrasync-command-line-function' will add that."
   :type '(repeat string))
 
-(defcustom rsync-buffer-name-function 'rsync-buffer-name
-  "Function used to create rsync buffer names.
+(defcustom contrasync-buffer-name-function 'contrasync-buffer-name
+  "Function used to create contrasync buffer names.
 It is called with 2 arguments - SOURCE and DESTINATION, which are
-paths from a `rsync-directory-alist' pair.
+paths from a `contrasync-directory-alist' pair.
 
 Please ensure that it uses `generate-new-buffer-name' to make it
 unique."
   :type 'function)
 
-(defun rsync-buffer-name (source destination)
-  "Return a new, unique buffer name starting with \"rsync-output\".
-SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair."
+(defun contrasync-buffer-name (source destination)
+  "Return a new, unique buffer name starting with \"contrasync-output\".
+SOURCE and DESTINATION are paths from a `contrasync-directory-alist' pair."
   (generate-new-buffer-name
-   (concat "rsync-output-"
+   (concat "contrasync-output-"
            (file-name-nondirectory
             (directory-file-name source)))))
 
-(defcustom rsync-command-line-function 'rsync-command-line
+(defcustom contrasync-command-line-function 'contrasync-command-line
   "Function used to generate the rsync command to be run.
 Return value should be a list of strings, usually with
-`rsync-command' as the first element, followed by
-`rsync-arguments'.
+`contrasync-command' as the first element, followed by
+`contrasync-arguments'.
 
 It is called with 3 arguments - the SOURCE path, the DESTINATION
 path, and DRY-RUN-P.
@@ -89,69 +89,69 @@ If DRY-RUN-P is non-nil, the function should include
 \"--dry-run\"/\"-n\" in the arguments."
   :type 'function)
 
-(defun rsync-command-line (source destination dry-run-p)
+(defun contrasync-command-line (source destination dry-run-p)
   "Return the rsync command line to be run.
-SOURCE and DESTINATION are paths from a `rsync-directory-alist' pair.
+SOURCE and DESTINATION are paths from a `contrasync-directory-alist' pair.
 
 If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
   (let ((source      (expand-file-name source))
         (destination (expand-file-name destination)))
-    `(,rsync-command
-      ,@rsync-arguments
+    `(,contrasync-command
+      ,@contrasync-arguments
       ,(if dry-run-p "--dry-run" "")
       ,source
       ,(concat destination source))))
 
-;; TODO - have the sentinel remove the process from `rsync--active-procs'; maybe run `rsync' again when a process exits
+;; TODO - have the sentinel remove the process from `contrasync--active-procs'; maybe run `contrasync' again when a process exits
 
-(defun rsync-sentinel (proc event)
+(defun contrasync-sentinel (proc event)
   (message "%s %s" proc event))
 
-(defvar rsync--alist-index 0)
-(defvar rsync--active-procs nil
+(defvar contrasync--alist-index 0)
+(defvar contrasync--active-procs nil
   "List of active rsync processes.")
 
-(defun rsync ()
-  "Run rsync (with \"--dry-run\") for each pair of paths in `rsync-directory-alist'.
+(defun contrasync ()
+  "Run rsync (with \"--dry-run\") for each pair of paths in `contrasync-directory-alist'.
 Display the rsync output in a buffer (see
-`rsync-buffer-name-function'). The user may then inspect the
+`contrasync-buffer-name-function'). The user may then inspect the
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
-  (if rsync-directory-alist
-      (cl-loop with directory-alists = (seq-drop rsync-directory-alist rsync--alist-index)
+  (if contrasync-directory-alist
+      (cl-loop with directory-alists = (seq-drop contrasync-directory-alist contrasync--alist-index)
         for (source . destination) in directory-alists
         ;; TODO - don't start new processes for paths which already have running processes
-        if (< (length rsync--active-procs) rsync-max-procs) do
+        if (< (length contrasync--active-procs) contrasync-max-procs) do
         (->>
          (make-process
-          :name    "rsync"
-          :buffer  (funcall rsync-buffer-name-function  source destination)
-          :command (funcall rsync-command-line-function source destination t)
+          :name    "contrasync"
+          :buffer  (funcall contrasync-buffer-name-function  source destination)
+          :command (funcall contrasync-command-line-function source destination t)
           :connection-type 'pipe
-          :stderr  "rsync-errors")
+          :stderr  "contrasync-errors")
          (list)
-         (append rsync--active-procs)
-         (setq rsync--active-procs))
-        (cl-incf rsync--alist-index)
+         (append contrasync--active-procs)
+         (setq contrasync--active-procs))
+        (cl-incf contrasync--alist-index)
         else do (cl-return)
-        ;; reset `rsync--alist-index' at the end of the list
-        if (= rsync--alist-index (length directory-alists))
-        do (setq rsync--alist-index 0))
-    (error "Please add some paths to `rsync-directory-alist' for `rsync' to synchronize")))
+        ;; reset `contrasync--alist-index' at the end of the list
+        if (= contrasync--alist-index (length directory-alists))
+        do (setq contrasync--alist-index 0))
+    (error "Please add some paths to `contrasync-directory-alist' for `contrasync' to synchronize")))
 
-(defvar rsync-mode-map
+(defvar contrasync-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'rsync-accept))
-  "Keymap used by `rsync-mode'.")
+    (define-key map (kbd "C-c C-c") #'contrasync-accept))
+  "Keymap used by `contrasync-mode'.")
 
-(define-derived-mode rsync-mode special-mode-hook "Rsync"
-  "Major mode for buffers created by `rsync'.")
+(define-derived-mode contrasync-mode special-mode-hook "Contrasync"
+  "Major mode for buffers created by `contrasync'.")
 
-(provide 'rsync)
+(provide 'contrasync)
 
-;;; rsync.el ends here
+;;; contrasync.el ends here
 
 ;; Local Variables:
-;; nameless-current-name: "rsync"
+;; nameless-current-name: "contrasync"
 ;; End:
