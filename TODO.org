@@ -26,6 +26,14 @@
          ;; the destination for this one will be "/media/user/my-disk/foo/"
          ("~/foo/" :destination (prefix source)))))
    #+END_SRC
+   We define a ~contrasync-default-destination~, which is a pattern specified as a list. The default value is ~'(prefix machine source)~
+
+   =:sources= can be strings or lists. If they are strings, ~contrasync-default-destination~ will be used to construct the destination. In the above example, "~/.emacs.d/" and "~/Documents" will be synced to "/media/user/my-disk/my-machine/home/user/.emacs.d/" and "/media/user/my-disk/my-machine/home/user/Documents/", respectively.
+
+   If an element of =:sources= is a list, we look for a =:destination= and/or an =:arguments=.
+
+   =:destination= overrides ~contrasync-default-destination~. It can be a string, or a function of two arguments - PREFIX and SOURCE.
+
    Like
    1. Greater flexibility without needing to change =contrasync-command-line-function=
    2. Structures your config, somewhat like =use-package= - :sources are glued to :prefix (but see #2 below)
