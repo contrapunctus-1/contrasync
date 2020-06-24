@@ -7,6 +7,7 @@ Script to partially automate my rsync backup workflow.
    1. Run rsync with certain options, including `--dry-run`, so no changes occur, and `--delete-after`, so the deletions are shown together at the end
    2. Let user view the rsync output - they can now
       * search for a file in the source or the target directory (by name, or by hash)
+      * refresh the buffer, running rsync with the same arguments (especially `--dry-run`) again
       * accept the changes - run rsync with same arguments but without -n
       * reject the changes and move to the next pair of directories
       * quit, which saves the iteration state. The user may resume with `M-x rsync`, even across Emacs sessions.
