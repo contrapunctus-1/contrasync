@@ -71,4 +71,6 @@ contrasync.el is released under your choice of [Unlicense](https://unlicense.org
 (See files [LICENSE](LICENSE) and [LICENSE.1](LICENSE.1)).
 
 ## Thanks
-pjb, wasamasa, and bhartrihari
+pjb, wasamasa, and bhartrihari for discussions and feedback
+
+wasamasa for suggesting that I name it something other than "rsync.el"
