@@ -33,7 +33,8 @@
 (defcustom contrasync-machine-name (->> (shell-command-to-string "hostname")
                               (replace-regexp-in-string "\n" "" ))
   "Name of machine we're running on.
-The default value is the hostname, but it can be any string.
+The default value is the output of hostname(1), but it can be any
+string.
 
 By default, this is used to construct the destination path (see
 `contrasync-command-line-function'). Thus, using path separators in
@@ -147,6 +148,17 @@ command again, but without the \"--dry-run.\""
 
 (define-derived-mode contrasync-mode special-mode-hook "Contrasync"
   "Major mode for buffers created by `contrasync'.")
+
+(defun contrasync-new ()
+  (let ((disk    (if contrasync-disk-path    contrasync-disk-path    ""))
+        (machine (if contrasync-machine-name contrasync-machine-name "")))
+    (loop for source-spec in contrasync-source-paths
+      when (stringp source-spec) do
+      (let* ((source (expand-file-name source-spec))
+             (target (concat disk machine source)))
+        (message "%s %s" source target))
+      when (listp source-spec)
+      (let ((source (expand-file-name (car source-spec))))))))
 
 (provide 'contrasync)
 
