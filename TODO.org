@@ -1,7 +1,12 @@
 * Certain
 1. [ ] Multi-machine use - user specifies a machine name; the destination path finally becomes =<destination path>/<machine name>/<source path>/=
 2. Progress bar
-3. Rename "destination" to "prefix", to clarify its use; I want the user to only have to specify it once per backup device.
+3. Better configuration format (see below)
+4. Check that the output path exists, and create it (with parents) if it does not.
+5. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
+
+** Configuration format
+1. Rename "destination" to "prefix", to clarify its use; I want the user to only have to specify it once per backup device.
 
    How about something like...
    #+BEGIN_SRC emacs-lisp
@@ -9,7 +14,7 @@
         :sources ("~/.emacs.d/"
                   "~/Documents/")))
    #+END_SRC
-4. Instead of requiring changes to =contrasync-command-line= to change the path, make a =format=-like way to specify the final destination path.
+2. Instead of requiring changes to =contrasync-command-line= to change the path, make a =format=-like way to specify the final destination path.
 
    Like ="%p/%m/%s"= for "<prefix path>/<machine name>/<source path>".
 
@@ -65,8 +70,6 @@
       : rsync ... ~/foo/bar/ /my-disk/home/user/foo/bar/
       * Could remove the implicit appending, but now the common case of "prefix-path/source-path" will either require more repetition than I'd like (using absolute paths for the destination; the prefix will be repeated in each one!), or more setup than I'd like (let-binding the disk path once, let-binding the source path for each source, and =(concat disk source)= for each destination)
    4. Repetition. Note how we're using =disk= in each path, directly or indirectly. With the plist idea, it is used implicitly. And the most common kind of path (=disk-machine-name=) becomes the (user-customizable) default pattern.
-5. Check that the output path exists, and create it (with parents) if it does not.
-6. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
 
 * Maybe
 1. Better default value for =contrasync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
