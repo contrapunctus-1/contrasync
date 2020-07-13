@@ -1,11 +1,12 @@
 * Certain
-1. [ ] Multi-machine use - user specifies a machine name; the destination path finally becomes =<destination path>/<machine name>/<source path>/=
+1. [X] Multi-machine configuration - user specifies a machine name, which the destination path may use; or, the user can modify configuration based on the machine name
+   * added =contrasync-machine-name=
 2. Progress bar
 3. Better configuration format (see below)
 4. Check that the output path exists, and create it (with parents) if it does not.
 5. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
 
-** Configuration format
+** Change configuration format
 1. Rename "destination" to "prefix", to clarify its use; I want the user to only have to specify it once per backup device.
 
    How about something like...
@@ -71,26 +72,25 @@
       * Could remove the implicit appending, but now the common case of "prefix-path/source-path" will either require more repetition than I'd like (using absolute paths for the destination; the prefix will be repeated in each one!), or more setup than I'd like (let-binding the disk path once, let-binding the source path for each source, and =(concat disk source)= for each destination)
    4. Repetition. Note how we're using =disk= in each path, directly or indirectly. With the plist idea, it is used implicitly. And the most common kind of path (=disk-machine-name=) becomes the (user-customizable) default pattern.
 
-Tried going ahead with the plist described above, but it didn't look good to me at all. Working on a new one -
+3. Tried going ahead with the plist described above, but it didn't look good to me at all. Working on a new one -
 
-#+BEGIN_SRC emacs-lisp
-  (setq contrasync-disk-path "/media/user/kash-sg-2tb/"
-        contrasync-source-paths
-        `("~/.emacs.d/"
-          "~/1-music-notation/"
-          "~/Documents/"
-          "~/.config/"
-          "~/.local/"
-          ("~/phone/Nokia 6.1/" ,contrasync-disk-path
-                                ,contrasync-machine-name
-                                "phone/Nokia 6.1/")))
-#+END_SRC
+   #+BEGIN_SRC emacs-lisp
+     (setq contrasync-disk-path "/media/user/kash-sg-2tb/"
+           contrasync-source-paths
+           `("~/.emacs.d/"
+             "~/1-music-notation/"
+             "~/Documents/"
+             "~/.config/"
+             "~/.local/"
+             ("~/phone/Nokia 6.1/"
+              ,contrasync-disk-path "phone/Nokia 6.1/")))
+   #+END_SRC
 
-The default destination path is =(concat contrasync-disk-path contrasync-machine-name source)=, e.g. for "~/.emacs.d/" it will be "/media/user/kash-sg-2tb/HP-ProBook-450-G0/home/user/.emacs.d/"
-
-If the source is a list, the first element should be the source path, and all the other elements are passed to `concat' to get the destination path.
-
-Currently, there is no way to run arbitrary Lisp code to generate the output path. No way to refer to the source path, either - but that's easy to add. (Use the symbol `source', we'll replace it before concatenating.)
+   Each source path can either be a string, a pair, or a list of strings.
+   1. If the source is a string, the destination path is =(concat contrasync-disk-path contrasync-machine-name source)=, e.g. for ="~/.emacs.d/"= it will be ="/media/user/kash-sg-2tb/HP-ProBook-450-G0/home/user/.emacs.d/"=. It can start with "ssh:user@host:" or anything else, contrasync.el will just pass it to rsync after expansion.
+   2. If the source is a pair, the =cdr= should be a remote protocol prefix - a string which specifies what remote protocol to use e.g. "ssh:user@host:". The destination will be =(concat remote-prefix contrasync-disk-path contrasync-machine-name source)=.
+   3. If the source is a list, the first element should be the source path, and all the other elements are passed to `concat' to get the destination path.
+   Currently, there is no way to run arbitrary Lisp code to generate the output path. No way to refer to the source path, either - but that's easy to add. (Use the symbol `source', we'll replace it before concatenating.)
 
 * Maybe
 1. Better default value for =contrasync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
