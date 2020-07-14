@@ -92,7 +92,7 @@
    3. If it is a list of strings, the first element should be the source path, and all the other elements are passed to =concat= to get the destination path. This is meant for syncing to both local or remote destinations.
    In all three cases, the source path can be local (e.g. ="/path/"=), or it can start with a remote protocol prefix (e.g. ="ssh:user@host:/path/"=). contrasync.el will just pass it to rsync after expansion.
 
-   Currently, there is no way to run arbitrary Lisp code to generate the output path. No way to refer to the source path, either - but that's easy to add. (Use the symbol =source=, we'll replace it before concatenating.)
+   To run arbitrary Lisp code to generate paths, the user can quasiquote. There's no way to refer to the source path, though - they need to use ~let~ bindings to do that.
 
 * Maybe
 1. Better default value for =contrasync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
