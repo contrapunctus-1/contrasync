@@ -1,4 +1,4 @@
-;;; contrasync.el --- make rsync backups easier -*- lexical-binding: t; -*-
+;;; contrasync.el --- run rsync on user-defined paths -*- lexical-binding: t; -*-
 
 ;; Author: contrapunctus <xmpp:contrapunctus@jabber.fr>
 ;; Maintainer: contrapunctus <xmpp:contrapunctus@jabber.fr>
@@ -24,29 +24,35 @@
 (require 'dash)
 
 (defgroup contrasync nil
-  "Run rsync on a user-defined alist of paths.")
+  "Run rsync on user-defined paths."
+  :group 'external)
 
 (defcustom contrasync-max-procs 1
   "Number of rsync processes to run in parallel."
   :type 'integer)
 
+(defcustom contrasync-disk-path ""
+  "Path to the disk you're synchronizing to.
+
+By default, this is used to construct the destination path."
+  :type 'directory)
+
 (defcustom contrasync-machine-name (->> (shell-command-to-string "hostname")
-                              (replace-regexp-in-string "\n" "" ))
+                              (replace-regexp-in-string "\n" ""))
   "Name of machine we're running on.
 The default value is the output of hostname(1), but it can be any
 string.
 
-By default, this is used to construct the destination path (see
-`contrasync-command-line-function'). Thus, using path separators in
-this may lead to unexpected behaviour."
+By default, this is used to construct the destination path. Thus, using path separators in this may lead to unexpected behaviour."
   :type 'string)
 
-(defcustom contrasync-directory-alist nil
+(defcustom contrasync-source-paths nil
   "Alist of directories to be synced, in the form (\"SOURCE\" . \"DESTINATION\").
 By default, SOURCE is appended to DESTINATION, so the final
 output path used is \"DESTINATION/SOURCE/\". See
 `contrasync-command-line'."
-  :type '(alist :key-type directory :value-type directory))
+  ;; TODO - add :type
+  )
 
 (defcustom contrasync-command "rsync"
   "Name of command to run. Can also be a path to the binary."
@@ -69,7 +75,7 @@ Please ensure that it uses `generate-new-buffer-name' to make it
 unique."
   :type 'function)
 
-(defun contrasync-buffer-name (source destination)
+(defun contrasync-buffer-name (source _destination)
   "Return a new, unique buffer name starting with \"contrasync-output\".
 SOURCE and DESTINATION are paths from a `contrasync-directory-alist' pair."
   (generate-new-buffer-name
@@ -149,16 +155,25 @@ command again, but without the \"--dry-run.\""
 (define-derived-mode contrasync-mode special-mode-hook "Contrasync"
   "Major mode for buffers created by `contrasync'.")
 
-(defun contrasync-new ()
+(defun contrasync-parse-paths ()
+  "Return a list of source-target path pairs, using `contrasync-source-paths'."
   (let ((disk    (if contrasync-disk-path    contrasync-disk-path    ""))
         (machine (if contrasync-machine-name contrasync-machine-name "")))
-    (loop for source-spec in contrasync-source-paths
-      when (stringp source-spec) do
-      (let* ((source (expand-file-name source-spec))
-             (target (concat disk machine source)))
-        (message "%s %s" source target))
-      when (listp source-spec)
-      (let ((source (expand-file-name (car source-spec))))))))
+    (cl-loop for source-spec in contrasync-source-paths collect
+      (cond ((stringp source-spec)
+             (let* ((source (expand-file-name source-spec))
+                    (target (concat disk machine source)))
+               (cons source target)))
+            ((format-proper-list-p source-spec)
+             (let ((source (expand-file-name (car source-spec)))
+                   (target (apply #'concat (cdr source-spec))))
+               (cons source target)))
+            ((consp source-spec)
+             (let* ((source (expand-file-name (car source-spec)))
+                    (target (concat (cdr source-spec)
+                                    disk machine source)))
+               (cons source target)))
+            (t (error "Source specifier must be a string, a pair, or a proper list - %s" source-spec))))))
 
 (provide 'contrasync)
 
