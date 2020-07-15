@@ -14,12 +14,13 @@
  (it "works with strings, lists, and pairs"
      (expect (contrasync-parse-paths)
              :to-equal
-             `((,(concat "/home/" user "/foo/") .
-                ,(concat contrasync-disk-path contrasync-machine-name "/home/" user "/foo/"))
-               (,(concat "/home/" user "/bar/") .
-                ,(concat "ssh:user@host:" contrasync-disk-path contrasync-machine-name "/home/" user "/bar/"))
-               (,(concat "/home/" user "/quux/") .
-                ,(concat contrasync-disk-path "quux/"))))))
+             (list
+              (cons (concat "/home/" user "/foo/")
+                    (concat contrasync-disk-path contrasync-machine-name "/home/" user "/foo/"))
+              (cons (concat "/home/" user "/bar/")
+                    (concat "ssh:user@host:" contrasync-disk-path contrasync-machine-name "/home/" user "/bar/"))
+              (cons (concat "/home/" user "/quux/")
+                    (concat contrasync-disk-path "quux/"))))))
 
 ;; Local Variables:
 ;; nameless-current-name: "contrasync"
