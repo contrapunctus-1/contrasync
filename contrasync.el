@@ -96,6 +96,30 @@ If DRY-RUN-P is non-nil, the function should include
 \"--dry-run\"/\"-n\" in the arguments."
   :type 'function)
 
+(defun contrasync-parse-paths ()
+  "Return a list of source-target path pairs, using `contrasync-source-paths'."
+  (let ((disk    (if contrasync-disk-path    contrasync-disk-path    ""))
+        (machine (if contrasync-machine-name contrasync-machine-name "")))
+    (cl-loop for source-spec in contrasync-source-paths collect
+      (cond
+       ((stringp source-spec)
+        (let* ((source (expand-file-name source-spec))
+               (target (concat disk machine source)))
+          (cons source target)))
+       ((format-proper-list-p source-spec)
+        (let ((source (expand-file-name (car source-spec)))
+              (target (apply #'concat (cdr source-spec))))
+          (cons source target)))
+       ((consp source-spec)
+        (let* ((source (expand-file-name (car source-spec)))
+               (target (concat (cdr source-spec)
+                               disk machine source)))
+          (cons source target)))
+       (t
+        (error (concat "Source specifier must be a string,"
+                       " a pair, or a proper list - %s")
+               source-spec))))))
+
 (defun contrasync-command-line (source destination dry-run-p)
   "Return the rsync command line to be run.
 SOURCE and DESTINATION are paths from a `contrasync-directory-alist' pair.
@@ -154,26 +178,6 @@ command again, but without the \"--dry-run.\""
 
 (define-derived-mode contrasync-mode special-mode-hook "Contrasync"
   "Major mode for buffers created by `contrasync'.")
-
-(defun contrasync-parse-paths ()
-  "Return a list of source-target path pairs, using `contrasync-source-paths'."
-  (let ((disk    (if contrasync-disk-path    contrasync-disk-path    ""))
-        (machine (if contrasync-machine-name contrasync-machine-name "")))
-    (cl-loop for source-spec in contrasync-source-paths collect
-      (cond ((stringp source-spec)
-             (let* ((source (expand-file-name source-spec))
-                    (target (concat disk machine source)))
-               (cons source target)))
-            ((format-proper-list-p source-spec)
-             (let ((source (expand-file-name (car source-spec)))
-                   (target (apply #'concat (cdr source-spec))))
-               (cons source target)))
-            ((consp source-spec)
-             (let* ((source (expand-file-name (car source-spec)))
-                    (target (concat (cdr source-spec)
-                                    disk machine source)))
-               (cons source target)))
-            (t (error "Source specifier must be a string, a pair, or a proper list - %s" source-spec))))))
 
 (provide 'contrasync)
 
