@@ -97,7 +97,7 @@ If DRY-RUN-P is non-nil, the function should include
   :type 'function)
 
 (defun contrasync-parse-paths ()
-  "Return a list of source-target path pairs, using `contrasync-source-paths'."
+  "Return an alist of source-target path pairs, using `contrasync-source-paths'."
   (let ((disk    (if contrasync-disk-path    contrasync-disk-path    ""))
         (machine (if contrasync-machine-name contrasync-machine-name "")))
     (cl-loop for source-spec in contrasync-source-paths collect
@@ -135,8 +135,12 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
 
 ;; TODO - have the sentinel remove the process from `contrasync--active-procs'; maybe run `contrasync' again when a process exits
 
-(defun contrasync-sentinel (proc event)
-  (message "%s %s" proc event))
+(defun contrasync-filter (proc output)
+  (with-current-buffer (process-buffer proc)
+    (when (string-match-p "[0-9]+ files\\.\\.\\." output)
+      (delete-region (point-at-bol) (point-at-eol)))
+    (insert
+     (replace-regexp-in-string "" "" output))))
 
 (defvar contrasync--alist-index 0)
 (defvar contrasync--active-procs nil
@@ -149,25 +153,26 @@ Display the rsync output in a buffer (see
 output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
-  (if contrasync-directory-alist
-      (cl-loop with directory-alists = (seq-drop contrasync-directory-alist contrasync--alist-index)
-        for (source . destination) in directory-alists
+  (if contrasync-source-paths
+      (cl-loop with directory-alist = (contrasync-parse-paths) ;; (seq-drop (contrasync-parse-paths) contrasync--alist-index)
+        for (source . destination) in directory-alist
         ;; TODO - don't start new processes for paths which already have running processes
         if (< (length contrasync--active-procs) contrasync-max-procs) do
-        (->>
-         (make-process
-          :name    "contrasync"
-          :buffer  (funcall contrasync-buffer-name-function  source destination)
-          :command (funcall contrasync-command-line-function source destination t)
-          :connection-type 'pipe
-          :stderr  "contrasync-errors")
-         (list)
-         (append contrasync--active-procs)
-         (setq contrasync--active-procs))
+        (->> (make-process
+              :name    "contrasync"
+              :buffer  (funcall contrasync-buffer-name-function  source destination)
+              :filter  'contrasync-filter
+              :command (funcall contrasync-command-line-function source destination t)
+              :connection-type 'pipe
+              :stderr  "contrasync-errors")
+             (list)
+             (append contrasync--active-procs)
+             (setq contrasync--active-procs))
         (cl-incf contrasync--alist-index)
-        else do (cl-return)
+        else do
+        (cl-return)
         ;; reset `contrasync--alist-index' at the end of the list
-        if (= contrasync--alist-index (length directory-alists))
+        if (= contrasync--alist-index (length directory-alist))
         do (setq contrasync--alist-index 0))
     (error "Please add some paths to `contrasync-directory-alist' for `contrasync' to synchronize")))
 
