@@ -134,13 +134,25 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
       ,destination)))
 
 ;; TODO - have the sentinel remove the process from `contrasync--active-procs'; maybe run `contrasync' again when a process exits
+(defun contrasync-sentinel (proc event)
+  (when (not (string-match-p "^open" event))
+    (--> (car contrasync--active-procs)
+         (remove it contrasync--active-procs)
+         (setq contrasync--active-procs it))
+    (message "%s removed" proc)))
 
 (defun contrasync-filter (proc output)
-  (with-current-buffer (process-buffer proc)
-    (when (string-match-p "[0-9]+ files\\.\\.\\." output)
-      (delete-region (point-at-bol) (point-at-eol)))
-    (insert
-     (replace-regexp-in-string "" "" output))))
+  (when (process-live-p proc)
+    (let ((inhibit-read-only t)
+          (progress-regex    "[0-9]+ files\\.\\.\\."))
+      (save-excursion
+        (with-current-buffer (process-buffer proc)
+          (when (string-match-p progress-regex output)
+            (goto-char (point-min))
+            (re-search-forward progress-regex nil t)
+            (delete-region (point-at-bol) (point-at-eol)))
+          (insert
+           (replace-regexp-in-string "" "" output)))))))
 
 (defvar contrasync--alist-index 0)
 (defvar contrasync--active-procs nil
@@ -160,16 +172,21 @@ command again, but without the \"--dry-run.\""
         for (source . destination) in directory-alist
         ;; TODO - don't start new processes for paths which already have running processes
         if (< (length contrasync--active-procs) contrasync-max-procs) do
-        (->> (make-process
-              :name    "contrasync"
-              :buffer  (funcall contrasync-buffer-name-function  source destination)
-              :filter  'contrasync-filter
-              :command (funcall contrasync-command-line-function source destination t)
+        (--> (make-process
+              :name     "contrasync"
+              :buffer   (funcall contrasync-buffer-name-function  source destination)
+              :filter   #'contrasync-filter
+              :command  (funcall contrasync-command-line-function source destination t)
               :connection-type 'pipe
-              :stderr  "contrasync-errors")
-             (list)
-             (append contrasync--active-procs)
-             (setq contrasync--active-procs))
+              :stderr   "contrasync-errors"
+              :sentinel #'contrasync-sentinel)
+             (list it)
+             (append it contrasync--active-procs)
+             (setq contrasync--active-procs it))
+        (--> (car contrasync--active-procs)
+             (process-buffer it)
+             (switch-to-buffer-other-window it))
+        (contrasync-mode)
         (cl-incf contrasync--alist-index)
         else do
         (cl-return)
@@ -178,12 +195,17 @@ command again, but without the \"--dry-run.\""
         do (setq contrasync--alist-index 0))
     (error "Please add some paths to `contrasync-directory-alist' for `contrasync' to synchronize")))
 
+(defun contrasync-accept ()
+  "Run the rsync command again, but without --dry-run."
+  (interactive))
+
 (defvar contrasync-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") #'contrasync-accept))
+    (define-key map (kbd "C-c C-c") #'contrasync-accept)
+    map)
   "Keymap used by `contrasync-mode'.")
 
-(define-derived-mode contrasync-mode special-mode-hook "Contrasync"
+(define-derived-mode contrasync-mode special-mode "Contrasync"
   "Major mode for buffers created by `contrasync'.")
 
 (provide 'contrasync)
