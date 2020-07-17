@@ -1,11 +1,16 @@
-* Certain
+* Core functionality [33%]
+1. [X] =contrasync-accept=
+2. [ ] fix garbled output in process buffer
+3. [ ] write edebug spec for =contrasync-with-process-buffer=
+
+* Certain [33%]
 1. [X] Multi-machine configuration - user specifies a machine name, which the destination path may use; or, the user can modify configuration based on the machine name
    * added =contrasync-machine-name=
-2. Progress bar
-3. Better configuration format (see below)
-4. Check that the output path exists, and create it (with parents) if it does not.
-5. Save state of directory-alist traversal across sessions.
-6. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
+2. [X] Better configuration format (see section below)
+3. [ ] Check that the output path exists, and create it (with parents) if it does not.
+4. [ ] Save state of directory-alist traversal across sessions.
+5. [ ] Don't start new processes for paths which already have running processes
+6. [ ] Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
 
 ** Change configuration format
 1. Rename "destination" to "prefix", to clarify its use; I want the user to only have to specify it once per backup device.
@@ -100,3 +105,4 @@
 2. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
 3. Throttle rsync CPU/RAM/disk use?
 4. Auto resume with idle timer?
+5. Progress bar
