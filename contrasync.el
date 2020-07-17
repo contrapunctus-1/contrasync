@@ -131,7 +131,7 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
       ,@contrasync-arguments
       ,(if dry-run-p "--dry-run" "")
       ,source
-      ,(concat destination source))))
+      ,destination)))
 
 ;; TODO - have the sentinel remove the process from `contrasync--active-procs'; maybe run `contrasync' again when a process exits
 
