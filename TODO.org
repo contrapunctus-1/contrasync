@@ -4,7 +4,8 @@
 2. Progress bar
 3. Better configuration format (see below)
 4. Check that the output path exists, and create it (with parents) if it does not.
-5. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
+5. Save state of directory-alist traversal across sessions.
+6. Pause/resume rsync jobs (SIGHUP/SIGCONT) - at per-process level and for all jobs (~contrasync-pause-all~/~contrasync-resume-all~)
 
 ** Change configuration format
 1. Rename "destination" to "prefix", to clarify its use; I want the user to only have to specify it once per backup device.

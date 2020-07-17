@@ -154,7 +154,9 @@ output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
   (if contrasync-source-paths
-      (cl-loop with directory-alist = (contrasync-parse-paths) ;; (seq-drop (contrasync-parse-paths) contrasync--alist-index)
+      (cl-loop with directory-alist = (contrasync-parse-paths)
+        ;; ;; let's leave this out until we have a better MVP
+        ;; (seq-drop (contrasync-parse-paths) contrasync--alist-index)
         for (source . destination) in directory-alist
         ;; TODO - don't start new processes for paths which already have running processes
         if (< (length contrasync--active-procs) contrasync-max-procs) do
