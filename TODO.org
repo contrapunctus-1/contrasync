@@ -1,6 +1,7 @@
 * Core functionality [33%]
 1. [X] =contrasync-accept=
-2. [ ] fix garbled output in process buffer
+2. [ ] display command line at top
+   * the filter function is interfering with it (commenting it out from the make-process call makes the command line appear)
 3. [ ] write edebug spec for =contrasync-with-process-buffer=
 
 * Certain [33%]
@@ -105,4 +106,4 @@
 2. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
 3. Throttle rsync CPU/RAM/disk use?
 4. Auto resume with idle timer?
-5. Progress bar
+5. Nicer progress bar

@@ -133,47 +133,64 @@ If DRY-RUN-P is non-nil, the \"--dry-run\" argument is added."
       ,source
       ,destination)))
 
-(defmacro contrasync-with-process-buffer (proc &rest forms)
+(defmacro contrasync-with-process-buffer (process &rest forms)
   "Run FORMS with the process buffer of PROC being current."
   (declare (indent defun))
-  `(let ((process-buffer (process-buffer ,proc)))
+  `(let ((process-buffer (process-buffer ,process)))
      (when (buffer-live-p process-buffer)
        (save-excursion
          (let ((inhibit-read-only t))
            (with-current-buffer process-buffer
              ,@forms))))))
 
-(defun contrasync-sentinel (proc event)
+(defun contrasync-sentinel (process event)
   (when (not (string-match-p "^open" event))
-    (--> (remove proc contrasync--active-procs)
+    (--> (remove process contrasync--active-procs)
          (setq contrasync--active-procs it)))
-  (contrasync-with-process-buffer proc
-    (insert event)))
+  (contrasync-with-process-buffer process
+    (goto-char (point-max))
+    (insert "STATUS " event)))
 
-(defun contrasync-filter (proc output)
+(defun contrasync-filter (process output)
   (let ((progress-regex "[0-9]+ files\\.\\.\\."))
-    (contrasync-with-process-buffer proc
+    (contrasync-with-process-buffer process
       (when (string-match-p progress-regex output)
         (goto-char (point-min))
+        (set-marker (process-mark process) (point))
         (re-search-forward progress-regex nil t)
         (delete-region (point-at-bol) (point-at-eol)))
       (insert
        (replace-regexp-in-string "" "" output)))))
+
+(defun contrasync-display-command-line (command-line process)
+  "Display the rsync command line in the buffer.
+COMMAND-LINE is a list of strings returned by
+`contrasync-command-line-function', and PROCESS is the rsync
+process."
+  (contrasync-with-process-buffer process
+    (goto-char (point-min))
+    (--> (-interpose " " command-line)
+         (apply #'concat it)
+         (insert it "\n"))
+    (set-marker (process-mark process) (point))))
 
 (defvar contrasync--alist-index 0)
 (defvar contrasync--active-procs nil
   "List of active rsync processes.")
 (defvar contrasync--current-source-destination nil)
 
-(defun contrasync-make-process (source destination dry-run-p)
-  "Run rsync and return a process object."
+(defun contrasync-make-process (source destination command-line dry-run-p)
+  "Run rsync and return a process object.
+SOURCE and DESTINATION are paths,
+COMMAND-LINE is a list of strings returned by `contrasync-command-line-function',
+DRY-RUN-P, if non-nil, means that rsync is to be called with \"--dry-run\"."
   (make-process
    :name     "contrasync"
    :buffer   (if dry-run-p
                  (funcall contrasync-buffer-name-function source destination)
                (current-buffer))
    :filter   #'contrasync-filter
-   :command  (funcall contrasync-command-line-function source destination dry-run-p)
+   :command  command-line
    :connection-type 'pipe
    :stderr   "contrasync-errors"
    :sentinel #'contrasync-sentinel))
@@ -186,43 +203,42 @@ output, and possibly accept it, which will run the same rsync
 command again, but without the \"--dry-run.\""
   (interactive)
   (if contrasync-source-paths
-      (cl-loop with directory-alist = (contrasync-parse-paths) with proc
+      (cl-loop with directory-alist = (contrasync-parse-paths)
         ;; ;; let's leave out pause/resume until we have a better MVP
         ;; (seq-drop (contrasync-parse-paths) contrasync--alist-index)
         for (source . destination) in directory-alist
         if (< (length contrasync--active-procs) contrasync-max-procs) do
-        (--> (contrasync-make-process source destination t)
-             (setq proc it)
-             (list it)
-             (append it contrasync--active-procs)
-             (setq contrasync--active-procs it))
-        (--> (process-buffer proc)
-             (switch-to-buffer-other-window it))
-        ;; insert the command in the beginning
-        (contrasync-with-process-buffer proc
-          (goto-char (point-min))
-          (--> (-interpose " " contrasync-arguments)
-               (append (list contrasync-command " ") it)
-               (apply #'concat it)
-               (insert it "\n"))
+        (let* ((command-line (funcall contrasync-command-line-function source destination t))
+               (process      (contrasync-make-process source destination command-line t)))
+          (--> (list process)
+               (append it contrasync--active-procs)
+               (setq contrasync--active-procs it))
+          (--> (process-buffer process)
+               (switch-to-buffer-other-window it))
+          ;; insert the command in the beginning
+          (contrasync-display-command-line command-line process)
           (contrasync-mode)
           (make-local-variable 'contrasync--current-source-destination)
           (setq contrasync--current-source-destination
-                (cons source destination)))
-        (cl-incf contrasync--alist-index)
+                (cons source destination))
+          (cl-incf contrasync--alist-index))
         else do
         (cl-return)
         ;; reset `contrasync--alist-index' at the end of the list
         if (= contrasync--alist-index (length directory-alist))
         do (setq contrasync--alist-index 0))
-    (error "Please add some paths to `contrasync-directory-alist' for `contrasync' to synchronize")))
+    (error
+     (concat "Please add some paths to `contrasync-directory-alist'"
+             " for `contrasync' to synchronize"))))
 
 (defun contrasync-accept ()
   "Run the rsync command again, but without --dry-run."
   (interactive)
   (-let [(source . destination) contrasync--current-source-destination]
     (if (derived-mode-p 'contrasync-mode)
-        (contrasync-make-process source destination nil)
+        (contrasync-make-process source destination
+                       (funcall contrasync-command-line-function source destination)
+                       nil)
       (error "`contrasync-accept' needs to be run from a `contrasync-mode' buffer"))))
 
 (defvar contrasync-mode-map
