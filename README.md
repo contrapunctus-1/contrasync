@@ -1,5 +1,5 @@
 # contrasync.el
-WARNING - NOT READY FOR USE AT THE MOMENT
+**WARNING - NOT READY FOR USE AT THE MOMENT**
 
 Script to partially automate my rsync backup workflow.
 
