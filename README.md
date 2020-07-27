@@ -21,7 +21,7 @@ The problems this solves for me -
 2. Removing and adding `--dry-run` manually is repetitive and error-prone
 3. Output of `--dry-run` becomes difficult to manage if I'm doing it for my entire disk
 4. For these reasons, updating my backups with rsync takes ages if I try to do it all at once; so I try to run it incrementally, every day, instead.
-5. Keeping track of the state from #3 in my head is difficult and error-prone.
+5. Keeping track of the state of #4 in my head is difficult and error-prone.
 
 ## Usage
 NB - at the moment, the user is advised to add a "/" at the end in all paths; in the near future, contrasync.el will take care of it.
