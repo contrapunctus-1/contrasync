@@ -95,15 +95,17 @@
 
    Each source path can either be a string, a pair, or a list of strings.
    1. If it is a string, the destination path is =(concat contrasync-disk-path contrasync-machine-name source)=, e.g. for ="~/.emacs.d/"= it will be ="/media/user/my-disk/machine-name/home/user/.emacs.d/"=. This is meant for syncing to a local destination.
-   2. If it is a pair, the =cdr= should be a remote protocol prefix - a string which specifies what remote protocol to use e.g. ="ssh:user@host:"=. The destination will be =(concat remote-prefix contrasync-disk-path contrasync-machine-name source)=. This is meant for syncing to a remote destination.
+   2. If it is a pair, the =cdr= should be a remote protocol prefix - a string which specifies what remote protocol to use e.g. ="ssh:user@host:"= . The destination will be =(concat remote-prefix contrasync-disk-path contrasync-machine-name source)=. This is meant for syncing to a remote destination.
    3. If it is a list of strings, the first element should be the source path, and all the other elements are passed to =concat= to get the destination path. This is meant for syncing to both local or remote destinations.
    In all three cases, the source path can be local (e.g. ="/path/"=), or it can start with a remote protocol prefix (e.g. ="ssh:user@host:/path/"=). contrasync.el will just pass it to rsync after expansion.
 
    To run arbitrary Lisp code to generate paths, the user can quasiquote. There's no way to refer to the source path, though - they need to use ~let~ bindings to do that.
 
 * Maybe
-1. Better default value for =contrasync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
-2. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
-3. Throttle rsync CPU/RAM/disk use?
-4. Auto resume with idle timer?
-5. Nicer progress bar
+1. [ ] Set =contrasync-machine-name= to nil by default
+2. [ ] Change =contrasync-disk-path= to =contrasync-local-disk-path=, and add a =contrasync-remote-disk-path= to act as the default output prefix for remote transfers.
+3. Better default value for =contrasync-max-procs=? Some way to determine the ideal value, maybe using number of CPU cores and/or network bandwidth?
+4. Replace ~--delete-after~ with ~--delete~ when accepting changes? The user has (hopefully) already seen the deletions, and the latter is, I seem to remember, faster and less RAM intensive.
+5. Throttle rsync CPU/RAM/disk use?
+6. Auto resume with idle timer?
+7. Nicer progress bar
